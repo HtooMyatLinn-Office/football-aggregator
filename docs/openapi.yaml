@@ -1,0 +1,533 @@
+openapi: 3.0.3
+info:
+  title: Football Data Aggregator API
+  description: |
+    Aggregates footballdata.io and SportMonks into unified REST endpoints.
+
+    - **Providers:** `footballData`, `sportmonks` (server-side keys)
+    - **Normalization:** All responses use unified schemas
+    - **Fallback:** Provider priority → Redis cache → 503
+
+    See [API.md](./API.md) for full documentation.
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:3000
+    description: Local development (Docker or npm run dev)
+
+tags:
+  - name: System
+    description: Health and status
+  - name: Teams
+    description: Team data
+  - name: Fixtures
+    description: Matches and fixtures
+  - name: Standings
+    description: League tables
+  - name: Providers
+    description: Provider health and capabilities
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      description: Liveness probe. Does not call external football APIs.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/v1/teams:
+    get:
+      tags: [Teams]
+      summary: List teams
+      description: Returns normalized teams for a league. Aggregates providers when available.
+      operationId: listTeams
+      parameters:
+        - $ref: '#/components/parameters/leagueId'
+        - $ref: '#/components/parameters/seasonId'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/ProviderUnavailable'
+
+  /api/v1/teams/{id}:
+    get:
+      tags: [Teams]
+      summary: Get team by ID
+      description: Returns a single team by unified ID (e.g. `fd-77`).
+      operationId: getTeamById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: fd-77
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/ProviderUnavailable'
+
+  /api/v1/fixtures:
+    get:
+      tags: [Fixtures]
+      summary: List fixtures
+      description: Returns normalized matches/fixtures for a league.
+      operationId: listFixtures
+      parameters:
+        - $ref: '#/components/parameters/leagueId'
+        - $ref: '#/components/parameters/seasonId'
+        - $ref: '#/components/parameters/dateFrom'
+        - $ref: '#/components/parameters/dateTo'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FixtureListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/ProviderUnavailable'
+
+  /api/v1/standings:
+    get:
+      tags: [Standings]
+      summary: List standings
+      description: Returns normalized league table rows.
+      operationId: listStandings
+      parameters:
+        - $ref: '#/components/parameters/leagueId'
+        - $ref: '#/components/parameters/seasonId'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandingListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/ProviderUnavailable'
+
+  /api/v1/providers/health:
+    get:
+      tags: [Providers]
+      summary: Provider health and capabilities
+      description: Returns health metrics and feature matrix for each configured provider.
+      operationId: getProviderHealth
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderHealthResponse'
+
+components:
+  parameters:
+    leagueId:
+      name: leagueId
+      in: query
+      description: |
+        League/competition ID. **Not** the provider name.
+        - footballdata.io: public `league_id` (e.g. 10 = La Liga)
+        - SportMonks: season/league id (may differ from footballdata.io)
+      schema:
+        type: integer
+        example: 10
+    seasonId:
+      name: seasonId
+      in: query
+      description: Season ID (footballdata.io `season_id`)
+      schema:
+        type: integer
+        example: 105
+    dateFrom:
+      name: dateFrom
+      in: query
+      description: Fixtures filter start date (YYYY-MM-DD)
+      schema:
+        type: string
+        format: date
+        example: '2024-08-01'
+    dateTo:
+      name: dateTo
+      in: query
+      description: Fixtures filter end date (YYYY-MM-DD)
+      schema:
+        type: string
+        format: date
+        example: '2024-08-31'
+
+  responses:
+    ValidationError:
+      description: Invalid query parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: Invalid query parameters
+              code: VALIDATION_ERROR
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: Team not found
+              code: NOT_FOUND
+    ProviderUnavailable:
+      description: All providers failed and no cache available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: All providers failed
+              code: PROVIDER_UNAVAILABLE
+              details:
+                failures:
+                  - provider: footballData
+                    message: Invalid API key.
+                    statusCode: 401
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+
+    ApiMeta:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [provider, cache]
+        cached:
+          type: boolean
+        providers:
+          type: array
+          items:
+            type: string
+            enum: [footballData, sportmonks]
+        total:
+          type: integer
+        id:
+          type: string
+
+    ProviderIds:
+      type: object
+      properties:
+        footballData:
+          type: string
+        sportmonks:
+          type: string
+
+    Venue:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        capacity:
+          type: integer
+        image:
+          type: string
+
+    UnifiedTeam:
+      type: object
+      required: [id, providerIds, name]
+      properties:
+        id:
+          type: string
+          example: fd-77
+        providerIds:
+          $ref: '#/components/schemas/ProviderIds'
+        name:
+          type: string
+          example: FC Barcelona
+        shortName:
+          type: string
+        country:
+          type: string
+        logo:
+          type: string
+          format: uri
+        founded:
+          type: integer
+        venue:
+          $ref: '#/components/schemas/Venue'
+
+    UnifiedFixture:
+      type: object
+      required: [id, providerIds, utcDate, status, homeTeam, awayTeam]
+      properties:
+        id:
+          type: string
+          example: fd-fixture-76062
+        providerIds:
+          $ref: '#/components/schemas/ProviderIds'
+        competition:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            code:
+              type: string
+        season:
+          type: string
+        matchday:
+          type: integer
+        utcDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+        homeTeam:
+          $ref: '#/components/schemas/UnifiedTeam'
+        awayTeam:
+          $ref: '#/components/schemas/UnifiedTeam'
+        score:
+          type: object
+          properties:
+            home:
+              type: integer
+            away:
+              type: integer
+        venue:
+          type: string
+
+    UnifiedStanding:
+      type: object
+      required:
+        - id
+        - providerIds
+        - league
+        - team
+        - position
+        - playedGames
+        - won
+        - draw
+        - lost
+        - goalsFor
+        - goalsAgainst
+        - goalDifference
+        - points
+      properties:
+        id:
+          type: string
+        providerIds:
+          $ref: '#/components/schemas/ProviderIds'
+        league:
+          type: object
+          required: [name]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            code:
+              type: string
+            season:
+              type: string
+        team:
+          $ref: '#/components/schemas/UnifiedTeam'
+        position:
+          type: integer
+        playedGames:
+          type: integer
+        won:
+          type: integer
+        draw:
+          type: integer
+        lost:
+          type: integer
+        goalsFor:
+          type: integer
+        goalsAgainst:
+          type: integer
+        goalDifference:
+          type: integer
+        points:
+          type: integer
+        form:
+          type: string
+
+    SuccessEnvelope:
+      type: object
+      required: [success, data, meta]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data: {}
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+
+    TeamListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/UnifiedTeam'
+
+    TeamResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UnifiedTeam'
+
+    FixtureListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/UnifiedFixture'
+
+    StandingListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/UnifiedStanding'
+
+    ProviderHealthSnapshot:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [footballData, sportmonks]
+        isHealthy:
+          type: boolean
+        lastSuccessAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastFailureAt:
+          type: string
+          format: date-time
+          nullable: true
+        failureCount:
+          type: integer
+        rateLimitErrors:
+          type: integer
+        avgResponseTimeMs:
+          type: number
+          nullable: true
+        lastResponseTimeMs:
+          type: integer
+          nullable: true
+
+    ProviderCapabilities:
+      type: object
+      properties:
+        teams:
+          type: boolean
+        fixtures:
+          type: boolean
+        standings:
+          type: boolean
+        teamLogos:
+          type: boolean
+        playerImages:
+          type: boolean
+        leagueLogos:
+          type: boolean
+        stadiumImages:
+          type: boolean
+        liveScores:
+          type: boolean
+        historicalData:
+          type: boolean
+
+    ProviderHealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                health:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ProviderHealthSnapshot'
+                capabilities:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      provider:
+                        type: string
+                      capabilities:
+                        $ref: '#/components/schemas/ProviderCapabilities'
+
+    ErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: object
+          required: [message]
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object

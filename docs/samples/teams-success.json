@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": "fd-57",
+      "providerIds": {
+        "footballData": "57",
+        "sportmonks": "8"
+      },
+      "name": "Arsenal FC",
+      "shortName": "Arsenal",
+      "country": "England",
+      "logo": "https://crests.football-data.org/57.png",
+      "founded": 1886,
+      "venue": {
+        "name": "Emirates Stadium",
+        "city": "London",
+        "capacity": 60704,
+        "image": "https://cdn.sportmonks.com/images/soccer/venues/8.png"
+      }
+    }
+  ],
+  "meta": {
+    "source": "provider",
+    "cached": false,
+    "providers": ["footballData", "sportmonks"],
+    "total": 1
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": "fd-standing-2021-57",
+      "providerIds": {
+        "footballData": "2021-57"
+      },
+      "league": {
+        "id": "2021",
+        "name": "Premier League",
+        "code": "PL",
+        "season": "2024-08-16/2025-05-25"
+      },
+      "team": {
+        "id": "fd-57",
+        "providerIds": { "footballData": "57" },
+        "name": "Arsenal FC",
+        "logo": "https://crests.football-data.org/57.png"
+      },
+      "position": 1,
+      "playedGames": 38,
+      "won": 28,
+      "draw": 5,
+      "lost": 5,
+      "goalsFor": 91,
+      "goalsAgainst": 29,
+      "goalDifference": 62,
+      "points": 89,
+      "form": "W,W,D,W,W"
+    }
+  ],
+  "meta": {
+    "source": "provider",
+    "cached": false,
+    "providers": ["footballData"],
+    "total": 1
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "success": false,
+  "error": {
+    "message": "All providers unavailable and no cache available",
+    "code": "PROVIDER_UNAVAILABLE",
+    "details": {
+      "provider": "footballData",
+      "rateLimited": false
+    }
+  }
+}

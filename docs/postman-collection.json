@@ -1,0 +1,162 @@
+{
+  "info": {
+    "_postman_id": "football-data-aggregator-v1",
+    "name": "Football Data Aggregator API",
+    "description": "Unified football API aggregating footballdata.io and SportMonks.\n\n**Base URL:** `http://localhost:3000`\n\n**Docs:** See `docs/API.md` and `docs/openapi.yaml` in the project repo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "leagueId",
+      "value": "10",
+      "description": "footballdata.io league_id (10 = La Liga in docs)"
+    },
+    {
+      "key": "seasonId",
+      "value": "105",
+      "description": "Optional footballdata.io season_id"
+    },
+    {
+      "key": "teamId",
+      "value": "fd-77",
+      "description": "Unified team ID from list teams response"
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Liveness check — no external API calls."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teams",
+      "item": [
+        {
+          "name": "List Teams",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams?leagueId={{leagueId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "teams"],
+              "query": [
+                { "key": "leagueId", "value": "{{leagueId}}" },
+                { "key": "seasonId", "value": "{{seasonId}}", "disabled": true }
+              ]
+            },
+            "description": "List normalized teams for a league."
+          }
+        },
+        {
+          "name": "Get Team by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/teams/{{teamId}}",
+            "description": "Get single team by unified ID (e.g. fd-77)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Standings",
+      "item": [
+        {
+          "name": "List Standings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/standings?leagueId={{leagueId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "standings"],
+              "query": [
+                { "key": "leagueId", "value": "{{leagueId}}" },
+                { "key": "seasonId", "value": "{{seasonId}}", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Standings (with season)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/standings?leagueId={{leagueId}}&seasonId={{seasonId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "standings"],
+              "query": [
+                { "key": "leagueId", "value": "{{leagueId}}" },
+                { "key": "seasonId", "value": "{{seasonId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fixtures",
+      "item": [
+        {
+          "name": "List Fixtures",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/fixtures?leagueId={{leagueId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "fixtures"],
+              "query": [{ "key": "leagueId", "value": "{{leagueId}}" }]
+            }
+          }
+        },
+        {
+          "name": "List Fixtures (date range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/fixtures?leagueId={{leagueId}}&dateFrom=2024-08-01&dateTo=2024-08-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "fixtures"],
+              "query": [
+                { "key": "leagueId", "value": "{{leagueId}}" },
+                { "key": "dateFrom", "value": "2024-08-01" },
+                { "key": "dateTo", "value": "2024-08-31" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Providers",
+      "item": [
+        {
+          "name": "Provider Health & Capabilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/providers/health",
+            "description": "Health metrics and feature flags per provider."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": "fd-fixture-497621",
+      "providerIds": {
+        "footballData": "497621"
+      },
+      "competition": {
+        "id": "2021",
+        "name": "Premier League",
+        "code": "PL"
+      },
+      "season": "2024-08-16/2025-05-25",
+      "matchday": 1,
+      "utcDate": "2024-08-16T19:00:00Z",
+      "status": "FINISHED",
+      "homeTeam": {
+        "id": "fd-57",
+        "providerIds": { "footballData": "57" },
+        "name": "Arsenal FC",
+        "shortName": "Arsenal",
+        "logo": "https://crests.football-data.org/57.png"
+      },
+      "awayTeam": {
+        "id": "fd-351",
+        "providerIds": { "footballData": "351" },
+        "name": "Wolverhampton Wanderers FC",
+        "shortName": "Wolverhampton"
+      },
+      "score": {
+        "home": 2,
+        "away": 0
+      },
+      "venue": "Emirates Stadium"
+    }
+  ],
+  "meta": {
+    "source": "provider",
+    "cached": false,
+    "providers": ["footballData"],
+    "total": 1
+  }
+}

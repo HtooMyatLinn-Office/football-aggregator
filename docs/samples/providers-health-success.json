@@ -1,0 +1,60 @@
+{
+  "success": true,
+  "data": {
+    "health": [
+      {
+        "provider": "footballData",
+        "isHealthy": true,
+        "lastSuccessAt": "2026-05-15T10:00:00.000Z",
+        "lastFailureAt": null,
+        "failureCount": 0,
+        "rateLimitErrors": 0,
+        "avgResponseTimeMs": 245.5,
+        "lastResponseTimeMs": 198
+      },
+      {
+        "provider": "sportmonks",
+        "isHealthy": true,
+        "lastSuccessAt": "2026-05-15T10:00:05.000Z",
+        "lastFailureAt": null,
+        "failureCount": 0,
+        "rateLimitErrors": 0,
+        "avgResponseTimeMs": 512.0,
+        "lastResponseTimeMs": 480
+      }
+    ],
+    "capabilities": [
+      {
+        "provider": "footballData",
+        "capabilities": {
+          "teams": true,
+          "fixtures": true,
+          "standings": true,
+          "teamLogos": true,
+          "playerImages": false,
+          "leagueLogos": true,
+          "stadiumImages": false,
+          "liveScores": false,
+          "historicalData": true
+        }
+      },
+      {
+        "provider": "sportmonks",
+        "capabilities": {
+          "teams": true,
+          "fixtures": true,
+          "standings": true,
+          "teamLogos": true,
+          "playerImages": true,
+          "leagueLogos": true,
+          "stadiumImages": true,
+          "liveScores": true,
+          "historicalData": true
+        }
+      }
+    ]
+  },
+  "meta": {
+    "total": 2
+  }
+}

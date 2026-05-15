@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProviderName {
+  footballData
+  sportmonks
+}
+
+enum ImageType {
+  team_logo
+  player_image
+  league_logo
+  stadium_image
+}
+
+enum SyncStatus {
+  success
+  partial
+  failed
+}
+
+model League {
+  id             String    @id @default(cuid())
+  externalId     String    @map("external_id")
+  provider       ProviderName
+  name           String
+  code           String?
+  country        String?
+  logoUrl        String?   @map("logo_url")
+  season         String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  teams          Team[]
+  fixtures       Fixture[]
+  standings      Standing[]
+
+  @@unique([externalId, provider])
+  @@map("leagues")
+}
+
+model Team {
+  id             String    @id @default(cuid())
+  unifiedId      String    @unique @map("unified_id")
+  name           String
+  shortName      String?   @map("short_name")
+  country        String?
+  logoUrl        String?   @map("logo_url")
+  founded        Int?
+  venueName      String?   @map("venue_name")
+  venueCity      String?   @map("venue_city")
+  venueCapacity  Int?      @map("venue_capacity")
+  venueImageUrl  String?   @map("venue_image_url")
+  leagueId       String?   @map("league_id")
+  league         League?   @relation(fields: [leagueId], references: [id])
+  rawPayload     Json?     @map("raw_payload")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  providerMappings ProviderMapping[]
+  homeFixtures   Fixture[] @relation("HomeTeam")
+  awayFixtures   Fixture[] @relation("AwayTeam")
+  standings      Standing[]
+  images         ImageResource[]
+
+  @@index([name])
+  @@map("teams")
+}
+
+model Fixture {
+  id             String    @id @default(cuid())
+  unifiedId      String    @unique @map("unified_id")
+  leagueId       String?   @map("league_id")
+  league         League?   @relation(fields: [leagueId], references: [id])
+  homeTeamId     String?   @map("home_team_id")
+  homeTeam       Team?     @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamId     String?   @map("away_team_id")
+  awayTeam       Team?     @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  matchday       Int?
+  status         String
+  utcDate        DateTime  @map("utc_date")
+  homeScore      Int?      @map("home_score")
+  awayScore      Int?      @map("away_score")
+  venue          String?
+  rawPayload     Json?     @map("raw_payload")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([utcDate])
+  @@index([status])
+  @@map("fixtures")
+}
+
+model Standing {
+  id             String    @id @default(cuid())
+  unifiedId      String    @unique @map("unified_id")
+  leagueId       String?   @map("league_id")
+  league         League?   @relation(fields: [leagueId], references: [id])
+  teamId         String?   @map("team_id")
+  team           Team?     @relation(fields: [teamId], references: [id])
+  position       Int
+  playedGames    Int       @map("played_games")
+  won            Int
+  draw           Int
+  lost           Int
+  goalsFor       Int       @map("goals_for")
+  goalsAgainst   Int       @map("goals_against")
+  goalDifference Int       @map("goal_difference")
+  points         Int
+  form           String?
+  season         String?
+  rawPayload     Json?     @map("raw_payload")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([leagueId, position])
+  @@map("standings")
+}
+
+model ProviderMapping {
+  id               String       @id @default(cuid())
+  unifiedEntityId  String       @map("unified_entity_id")
+  entityType       String       @map("entity_type")
+  provider         ProviderName
+  providerEntityId String       @map("provider_entity_id")
+  teamId           String?      @map("team_id")
+  team             Team?        @relation(fields: [teamId], references: [id])
+  metadata         Json?
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  @@unique([provider, providerEntityId, entityType])
+  @@index([unifiedEntityId])
+  @@map("provider_mappings")
+}
+
+model SyncLog {
+  id           String       @id @default(cuid())
+  provider     ProviderName
+  entityType   String       @map("entity_type")
+  status       SyncStatus
+  recordsCount Int          @default(0) @map("records_count")
+  errorMessage String?      @map("error_message")
+  durationMs   Int?         @map("duration_ms")
+  startedAt    DateTime     @default(now()) @map("started_at")
+  completedAt  DateTime?    @map("completed_at")
+
+  @@index([provider, entityType, startedAt])
+  @@map("sync_logs")
+}
+
+model ProviderHealth {
+  id                  String       @id @default(cuid())
+  provider            ProviderName @unique
+  isHealthy           Boolean      @default(true) @map("is_healthy")
+  lastSuccessAt       DateTime?    @map("last_success_at")
+  lastFailureAt       DateTime?    @map("last_failure_at")
+  failureCount        Int          @default(0) @map("failure_count")
+  rateLimitErrors     Int          @default(0) @map("rate_limit_errors")
+  avgResponseTimeMs   Float?       @map("avg_response_time_ms")
+  lastResponseTimeMs  Int?         @map("last_response_time_ms")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  @@map("provider_health")
+}
+
+model ImageResource {
+  id            String       @id @default(cuid())
+  entityType    String       @map("entity_type")
+  entityId      String       @map("entity_id")
+  imageType     ImageType    @map("image_type")
+  sourceUrl     String       @map("source_url")
+  provider      ProviderName
+  localPath     String?      @map("local_path")
+  contentType   String?      @map("content_type")
+  byteSize      Int?         @map("byte_size")
+  lastSyncedAt  DateTime?    @map("last_synced_at")
+  teamId        String?      @map("team_id")
+  team          Team?        @relation(fields: [teamId], references: [id])
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@unique([entityId, imageType, provider])
+  @@index([entityType, entityId])
+  @@map("image_resources")
+}
