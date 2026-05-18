@@ -3,9 +3,15 @@ pipeline {
 
     stages {
 
-        stage('Test Connection') {
+        stage('Install Dependencies') {
             steps {
-                echo 'Jenkins connected successfully!'
+                sh 'npm install'
+            }
+        }
+
+        stage('Build Project') {
+            steps {
+                sh 'npm run build'
             }
         }
 
