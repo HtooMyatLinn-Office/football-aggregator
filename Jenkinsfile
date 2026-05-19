@@ -28,7 +28,10 @@ pipeline {
 
         stage('Start Server') {
             steps {
-                bat 'pm2 restart football-api || pm2 start dist/index.js --name football-api'
+                  bat '''
+            @echo off
+            call npx pm2 restart football-api || npx pm2 start dist/index.js --name football-api
+        '''
             }
         }
 
