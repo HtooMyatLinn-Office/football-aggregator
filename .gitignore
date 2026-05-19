@@ -1,12 +1,15 @@
 node_modules/
 dist/
+
 .env.production
-.env.development
 .env.local
+.env
+
 *.log
 coverage/
 .DS_Store
 .idea/
 .vscode/
 *.tsbuildinfo
+
 prisma/migrations/**/migration_lock.toml
